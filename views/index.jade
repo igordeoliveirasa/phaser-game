@@ -12,6 +12,10 @@ block content
             BLUE: "#0000ff"
         };
 
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1) + min );
+        }
+
         function createCircle(game, x, y, w, color) {
             // Create BitmapData
             var bmd = game.add.bitmapData(w, w)
@@ -40,12 +44,17 @@ block content
             return sprite;
         }
 
-        game = new Phaser.Game(800, 600, Phaser.AUTO, '', {preload: preload, create: create, update: update});
+        screenWidth = 800;
+        screenHeight = 600;
+
+        game = new Phaser.Game(screenWidth, screenHeight, Phaser.AUTO, '', {preload: preload, create: create, update: update});
         angle = 0;
         speed = 0.0;
         maxSpeed = 5;
         acceleration = 0.1;
         reduction = 0.5;
+
+        maxFood = 200;
 
         function create() {
             game.physics.startSystem(Phaser.Physics.ARCADE);
@@ -60,17 +69,22 @@ block content
 
             player = createPlayer(game, 200, 200, 10, COLOR.BLACK);
 
+
             foods = game.add.group();
             foods.enableBody = true;
-            food = createFood(game, 20, 20, 5, COLOR.BLUE);
-            game.physics.arcade.enable(food);
-            food.body.immovable = true;
-            foods.add(food);
+            for (var i=0; i<maxFood; i++) {
+                var x = getRandomInt(0, screenWidth);
+                var y = getRandomInt(0, screenHeight);
+                foods.add(createFood(game, x, y, 5, COLOR.BLUE));
+            }
+
         };
 
 
-        function hasEaten() {
-            alert("has eaten")
+        function hasEaten(player, food) {
+            //player.x =  lastX;
+            //player.y = lastY;
+            food.kill();
         }
 
         function update() {
@@ -85,10 +99,10 @@ block content
                     speed = speed + acceleration;
                 }
                 if (cursors.left.isDown) {
-                    angle = angle - acceleration;
+                    angle = angle - (acceleration*2);
                 }
                 else if (cursors.right.isDown) {
-                    angle = angle + acceleration;
+                    angle = angle + (acceleration*2);
                 }
             }
             else
@@ -113,6 +127,9 @@ block content
 
             var velocity_x = speed * scale_x;
             var velocity_y = speed * scale_y;
+
+            lastX = player.x;
+            lastY = player.y;
 
             player.x = player.x + velocity_x;
             player.y = player.y + velocity_y;
