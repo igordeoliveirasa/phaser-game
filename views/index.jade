@@ -1,0 +1,88 @@
+extends layout
+
+block content
+    //h1= title
+    //p Welcome to #{title}
+
+    script.
+
+        COLOR = {
+            BLACK : "#000000",
+            WHITE: "#ffffff",
+            BLUE: "#0000ff"
+        };
+
+        function createCircle(game, x, y, w, color) {
+            // Create BitmapData
+            var bmd = game.add.bitmapData(w, w)
+
+            // Draw circle
+            bmd.ctx.fillStyle = color;
+            bmd.ctx.beginPath();
+            bmd.ctx.arc(w/2, w/2, w/2, 0, Math.PI*2, true);
+            bmd.ctx.closePath();
+            bmd.ctx.fill();
+            // Put BitmapData in a Sprite
+            var sprite = game.add.sprite(x, y, bmd);
+            return sprite;
+        };
+
+        game = new Phaser.Game(800, 600, Phaser.AUTO, '', {preload: preload, create: create, update: update});
+        angle = 45;
+        speed = 0;
+        acceleration = 0.1;
+        function preload() {
+            game.stage.backgroundColor =  COLOR.WHITE;
+
+            //game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
+            //game.scale.startFullScreen(false);
+            cursors = game.input.keyboard.createCursorKeys();
+
+
+            player = createCircle(game, 200, 200, 10, COLOR.BLACK);
+
+            game.physics.arcade.enable(player);
+            //food = createCircle(game, 20, 20, 5, COLOR.BLUE);
+            // Tweening just for fun :)
+            //game.add.tween(sprite).to( {  y: 100}, 2000, Phaser.Easing.Linear.None, true, 0, 1000, true);
+
+        };
+
+        function create() {
+        };
+
+        function update() {
+            // Reset the players velocity (movement)
+            if (cursors.up.isDown || cursors.left.isDown || cursors.right.isDown) {
+                if (cursors.up.isDown)
+                {
+                    speed = speed + acceleration;
+                }
+                if (cursors.left.isDown) {
+                    angle = angle + acceleration;
+                }
+                else if (cursors.right.isDown) {
+                    angle = angle - acceleration;
+                }
+            }
+            else
+            {
+                if (speed > 0) {
+                    speed = speed - acceleration;
+                }
+
+                if (speed < 0) {
+                    speed = 0;
+                }
+            }
+
+
+            var scale_x = Math.cos(angle);
+            var scale_y = Math.sin(angle);
+
+            var velocity_x = speed * scale_x;
+            var velocity_y = speed * scale_y;
+
+            player.x = player.x + velocity_x;
+            player.y = player.y + velocity_y;
+        };
