@@ -22,36 +22,62 @@ block content
             bmd.ctx.arc(w/2, w/2, w/2, 0, Math.PI*2, true);
             bmd.ctx.closePath();
             bmd.ctx.fill();
-            // Put BitmapData in a Sprite
+
             var sprite = game.add.sprite(x, y, bmd);
             return sprite;
         };
 
-        game = new Phaser.Game(800, 600, Phaser.AUTO, '', {preload: preload, create: create, update: update});
-        angle = 45;
-        speed = 0;
-        acceleration = 0.1;
-        function preload() {
-            game.stage.backgroundColor =  COLOR.WHITE;
-
-            //game.scale.fullScreenScaleMode = Phaser.ScaleManager.EXACT_FIT;
-            //game.scale.startFullScreen(false);
-            cursors = game.input.keyboard.createCursorKeys();
-
-
-            player = createCircle(game, 200, 200, 10, COLOR.BLACK);
-
+        function createPlayer(game, x, y, w, color) {
+            var player = createCircle(game, x, y, w, color);
             game.physics.arcade.enable(player);
-            //food = createCircle(game, 20, 20, 5, COLOR.BLUE);
-            // Tweening just for fun :)
-            //game.add.tween(sprite).to( {  y: 100}, 2000, Phaser.Easing.Linear.None, true, 0, 1000, true);
+            player.body.collideWorldBounds = true;
+            player.body.bounce.y=0.25;
+            return player;
+        }
 
-        };
+        function createFood(game, x, y, w, color) {
+            var sprite = createCircle(game, x, y, w, color);
+            return sprite;
+        }
+
+        game = new Phaser.Game(800, 600, Phaser.AUTO, '', {preload: preload, create: create, update: update});
+        angle = 0;
+        speed = 0.0;
+        maxSpeed = 5;
+        acceleration = 0.1;
+        reduction = 0.5;
 
         function create() {
+            game.physics.startSystem(Phaser.Physics.ARCADE);
         };
 
+        function preload() {
+            //scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
+
+            game.stage.backgroundColor =  COLOR.WHITE;
+
+            cursors = game.input.keyboard.createCursorKeys();
+
+            player = createPlayer(game, 200, 200, 10, COLOR.BLACK);
+
+            foods = game.add.group();
+            foods.enableBody = true;
+            food = createFood(game, 20, 20, 5, COLOR.BLUE);
+            game.physics.arcade.enable(food);
+            food.body.immovable = true;
+            foods.add(food);
+        };
+
+
+        function hasEaten() {
+            alert("has eaten")
+        }
+
         function update() {
+
+            //game.physics.arcade.collide(player, foods);
+            game.physics.arcade.overlap(player, foods, hasEaten, null, this);
+
             // Reset the players velocity (movement)
             if (cursors.up.isDown || cursors.left.isDown || cursors.right.isDown) {
                 if (cursors.up.isDown)
@@ -59,16 +85,16 @@ block content
                     speed = speed + acceleration;
                 }
                 if (cursors.left.isDown) {
-                    angle = angle + acceleration;
+                    angle = angle - acceleration;
                 }
                 else if (cursors.right.isDown) {
-                    angle = angle - acceleration;
+                    angle = angle + acceleration;
                 }
             }
             else
             {
                 if (speed > 0) {
-                    speed = speed - acceleration;
+                    speed = speed - reduction;
                 }
 
                 if (speed < 0) {
@@ -77,8 +103,13 @@ block content
             }
 
 
+
             var scale_x = Math.cos(angle);
             var scale_y = Math.sin(angle);
+
+            if (speed>maxSpeed) {
+                speed = maxSpeed;
+            }
 
             var velocity_x = speed * scale_x;
             var velocity_y = speed * scale_y;
