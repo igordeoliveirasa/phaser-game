@@ -31,12 +31,63 @@ block content
             return sprite;
         };
 
+
         function createPlayer(game, x, y, w, color) {
             var player = createCircle(game, x, y, w, color);
             game.physics.arcade.enable(player);
             player.body.collideWorldBounds = true;
             player.body.bounce.y=0.25;
             return player;
+        }
+
+        var Organism = function(game, x, y, w, color) {
+            this._organism = createPlayer(game, x, y, w, color)
+            this.angle = 0;
+            this.speed = 0.0;
+            this.maxSpeed = 5;
+            this.acceleration = 0.1;
+            this.reduction = 0.5;
+
+            this.update = function(isUpDown, isLeftDown, isRightDown) {
+                if (isUpDown || isLeftDown || isRightDown) {
+                    if (isUpDown)
+                    {
+                        this.speed = this.speed + this.acceleration;
+                    }
+                    if (isLeftDown) {
+                        this.angle = this.angle - (this.acceleration*2);
+                    }
+                    else if (isRightDown) {
+                        this.angle = this.angle + (this.acceleration*2);
+                    }
+                }
+                else
+                {
+                    if (this.speed > 0) {
+                        this.speed = this.speed - this.reduction;
+                    }
+
+                    if (this.speed < 0) {
+                        this.speed = 0;
+                    }
+                }
+
+                var scale_x = Math.cos(this.angle);
+                var scale_y = Math.sin(this.angle);
+
+                if (this.speed>this.maxSpeed) {
+                    this.speed = this.maxSpeed;
+                }
+
+                var velocity_x = this.speed * scale_x;
+                var velocity_y = this.speed * scale_y;
+
+                lastX = this._organism.x;
+                lastY = this._organism.y;
+
+                this._organism.x = this._organism.x + velocity_x;
+                this._organism.y = this._organism.y + velocity_y;
+            }
         }
 
         function createFood(game, x, y, w, color) {
@@ -48,12 +99,6 @@ block content
         screenHeight = 600;
 
         game = new Phaser.Game(screenWidth, screenHeight, Phaser.AUTO, '', {preload: preload, create: create, update: update});
-        angle = 0;
-        speed = 0.0;
-        maxSpeed = 5;
-        acceleration = 0.1;
-        reduction = 0.5;
-
         maxFood = 200;
 
         function create() {
@@ -67,7 +112,8 @@ block content
 
             cursors = game.input.keyboard.createCursorKeys();
 
-            player = createPlayer(game, 200, 200, 10, COLOR.BLACK);
+            //player = createPlayer(game, 200, 200, 10, COLOR.BLACK);
+            organism = new Organism(game, 200, 200, 10, COLOR.BLACK);
 
 
             foods = game.add.group();
@@ -81,7 +127,7 @@ block content
         };
 
 
-        function hasEaten(player, food) {
+        function hasEaten(organism, food) {
             //player.x =  lastX;
             //player.y = lastY;
             food.kill();
@@ -90,9 +136,11 @@ block content
         function update() {
 
             //game.physics.arcade.collide(player, foods);
-            game.physics.arcade.overlap(player, foods, hasEaten, null, this);
+            game.physics.arcade.overlap(organism._organism, foods, hasEaten, null, this);
+            organism.update(cursors.up.isDown, cursors.left.isDown, cursors.right.isDown);
 
             // Reset the players velocity (movement)
+            /*
             if (cursors.up.isDown || cursors.left.isDown || cursors.right.isDown) {
                 if (cursors.up.isDown)
                 {
@@ -131,4 +179,5 @@ block content
 
             player.x = player.x + velocity_x;
             player.y = player.y + velocity_y;
+            */
         };
