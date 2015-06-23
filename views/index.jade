@@ -2,7 +2,7 @@ extends layout
 
 block content
     h1= title
-    p Welcome to #{title}
+    p A combination of neural networks and genetic algorithm
 
     script.
 
@@ -108,16 +108,17 @@ block content
                 if (isUpDown || isLeftDown || isRightDown) {
                     if (isUpDown)
                     {
-                        this.speed = this.speed + this.acceleration;
+                        this.speed += this.acceleration;
                     }
                     if (isLeftDown) {
-                        this.angle = this.angle - (this.acceleration*2);
+                        this.angle -= 5 + this.speed;//(this.speed);
                     }
                     else if (isRightDown) {
-                        this.angle = this.angle + (this.acceleration*2);
+                        this.angle += 5 + this.speed;//(this.speed);
                     }
                 }
-                else
+
+                if (!isUpDown)
                 {
                     if (this.speed > 0) {
                         this.speed = this.speed - this.reduction;
@@ -128,21 +129,22 @@ block content
                     }
                 }
 
-                var scale_x = Math.cos(this.angle);
-                var scale_y = Math.sin(this.angle);
-
-                if (this.speed>this.maxSpeed) {
-                    this.speed = this.maxSpeed;
+                if (this.angle > 360) {
+                    this.angle -= 360;
                 }
-
-                var velocity_x = this.speed * scale_x;
-                var velocity_y = this.speed * scale_y;
+                if (this.angle < -360) {
+                    this.angle += 360;
+                }
 
                 lastX = this._organism.x;
                 lastY = this._organism.y;
+                if (this.speed > this.maxSpeed) {
+                    this.speed = this.maxSpeed;
+                }
 
-                this._organism.x = this._organism.x + velocity_x;
-                this._organism.y = this._organism.y + velocity_y;
+                var radians = Math.PI/180 * this.angle;
+                this._organism.x += this.speed * Math.cos(radians);
+                this._organism.y += this.speed * Math.sin(radians);
             }
         }
 
