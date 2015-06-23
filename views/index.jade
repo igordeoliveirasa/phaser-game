@@ -9,23 +9,37 @@ block content
         COLOR = {
             BLACK : "#000000",
             WHITE: "#ffffff",
-            BLUE: "#0000ff"
+            BLUE: "#0000ff",
+            RED: "#ff0000"
         };
 
         function getRandomInt(min, max) {
             return Math.floor(Math.random() * (max - min + 1) + min );
         }
 
-        function createCircle(game, x, y, w, color) {
+        function createCircle(game, x, y, w, lineWidthInString, strokeStyle, fillStyle) {
             // Create BitmapData
             var bmd = game.add.bitmapData(w, w)
 
             // Draw circle
-            bmd.ctx.fillStyle = color;
             bmd.ctx.beginPath();
-            bmd.ctx.arc(w/2, w/2, w/2, 0, Math.PI*2, true);
+
+            if (strokeStyle) {
+                bmd.ctx.strokeStyle = strokeStyle;
+                bmd.ctx.stroke();
+            }
+
+            if (lineWidthInString) {
+                bmd.ctx.lineWidth = lineWidthInString;
+            }
+
+            bmd.ctx.arc(w / 2, w / 2, w / 2, 0, Math.PI * 2, true);
+            if (fillStyle) {
+                bmd.ctx.fillStyle = fillStyle;
+                bmd.ctx.fill();
+            }
+
             bmd.ctx.closePath();
-            bmd.ctx.fill();
 
             var sprite = game.add.sprite(x, y, bmd);
             return sprite;
@@ -33,11 +47,32 @@ block content
 
 
         function createPlayer(game, x, y, w, color) {
-            var player = createCircle(game, x, y, w, color);
+            var player = createCircle(game, x, y, w, null, null, color);
             game.physics.arcade.enable(player);
             player.body.collideWorldBounds = true;
             player.body.bounce.y=0.25;
             return player;
+        }
+
+        function outstandCircle(game, x, y, w) {
+            var sprite = createCircle(game, x, y, w, null, null, 'rgba(255,0,0,0.5)');
+            return sprite;
+        }
+
+        function createFood(game, x, y, w, color) {
+            var sprite = createCircle(game, x, y, w, null, null, color);
+            return sprite;
+        }
+
+        function calculateDistance(x1, y1, x2, y2) {
+            var xs = 0;
+            var ys = 0;
+            xs = Math.abs(x2 - x1);
+            xs = xs * xs;
+
+            ys = Math.abs(y2 - y1);
+            ys = ys * ys;
+            return Math.sqrt(xs + ys);
         }
 
         var Organism = function(game, x, y, w, color) {
@@ -47,6 +82,27 @@ block content
             this.maxSpeed = 5;
             this.acceleration = 0.1;
             this.reduction = 0.5;
+            this.closestFood = null;
+
+            this.getClosestFood = function(foods) {
+                var closestDistance = calculateDistance(this._organism.x, this._organism.y, foods.children[0].x, foods.children[0].y);
+                var closestFood = foods.children[0];
+
+                for (var i=0; i<foods.children.length; i++) {
+                    var food = foods.getAt(i);
+                    if (food.alive) {
+                        var distance = calculateDistance(this._organism.x, this._organism.y, food.x, food.y);
+                        if (distance<closestDistance) {
+                            closestDistance = distance;
+                            closestFood = food;
+                        }
+                    }
+                }
+                if (this.closestFood) {
+                    this.closestFood.kill();
+                }
+                this.closestFood = outstandCircle(game, closestFood.x-10, closestFood.y-10, 20, "40", COLOR.RED);
+            }
 
             this.update = function(isUpDown, isLeftDown, isRightDown) {
                 if (isUpDown || isLeftDown || isRightDown) {
@@ -90,11 +146,6 @@ block content
             }
         }
 
-        function createFood(game, x, y, w, color) {
-            var sprite = createCircle(game, x, y, w, color);
-            return sprite;
-        }
-
         screenWidth = 800;
         screenHeight = 600;
 
@@ -113,7 +164,6 @@ block content
             cursors = game.input.keyboard.createCursorKeys();
 
             //player = createPlayer(game, 200, 200, 10, COLOR.BLACK);
-            organism = new Organism(game, 200, 200, 10, COLOR.BLACK);
 
 
             foods = game.add.group();
@@ -124,6 +174,7 @@ block content
                 foods.add(createFood(game, x, y, 5, COLOR.BLUE));
             }
 
+            organism = new Organism(game, 200, 200, 10, COLOR.BLACK);
         };
 
 
@@ -134,50 +185,8 @@ block content
         }
 
         function update() {
-
             //game.physics.arcade.collide(player, foods);
             game.physics.arcade.overlap(organism._organism, foods, hasEaten, null, this);
+            organism.getClosestFood(foods);
             organism.update(cursors.up.isDown, cursors.left.isDown, cursors.right.isDown);
-
-            // Reset the players velocity (movement)
-            /*
-            if (cursors.up.isDown || cursors.left.isDown || cursors.right.isDown) {
-                if (cursors.up.isDown)
-                {
-                    speed = speed + acceleration;
-                }
-                if (cursors.left.isDown) {
-                    angle = angle - (acceleration*2);
-                }
-                else if (cursors.right.isDown) {
-                    angle = angle + (acceleration*2);
-                }
-            }
-            else
-            {
-                if (speed > 0) {
-                    speed = speed - reduction;
-                }
-
-                if (speed < 0) {
-                    speed = 0;
-                }
-            }
-
-            var scale_x = Math.cos(angle);
-            var scale_y = Math.sin(angle);
-
-            if (speed>maxSpeed) {
-                speed = maxSpeed;
-            }
-
-            var velocity_x = speed * scale_x;
-            var velocity_y = speed * scale_y;
-
-            lastX = player.x;
-            lastY = player.y;
-
-            player.x = player.x + velocity_x;
-            player.y = player.y + velocity_y;
-            */
         };
