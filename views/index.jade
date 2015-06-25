@@ -135,9 +135,10 @@ block content
             this._organism = createPlayer(game, x, y, w, color)
             this.angle = angle;
             this.speed = 0.0;
-            this.maxSpeed = 5;
+            this.maxSpeed = 2;
             this.acceleration = 0.1;
             this.reduction = 0.5;
+            this.score = 0;
             this.brain = new ml.MLP({
                 'input' : [
                     [100.0, 100.0, 0.0, 0.5, 110.0, 110.0],
@@ -225,38 +226,69 @@ block content
         screenWidth = 800;
         screenHeight = 600;
 
+        lblGeneration = "Generation: 0";
         game = new Phaser.Game(screenWidth, screenHeight, Phaser.AUTO, '', {preload: preload, create: create, update: update});
         maxFood = 200;
 
+        foods = null;
         organisms = [];
+        MAX_ORGANISMS = 30;
+        generation = 0;
+        generationTimeInSeconds = 5;
 
+        STARTED = false;
+
+        function sortByHighestScore(organisms) {
+            return organisms.sort(function(organismA, organismB) {
+                return (organismB.score - organismA.score);
+            });
+        }
+
+        function generationManager(){
+
+            STARTED = false;
+
+            if (generation>0) {
+                var sorted = sortByHighestScore(organisms);
+                console.log(sorted);
+                // var newBrains = crossover();
+                console.log("continuar daqui ..");
+            }
+
+            generation += 1;
+
+            game.world.removeAll()
+
+            foods = game.add.group();
+            foods.enableBody = true;
+            for (var i = 0; i < maxFood; i++) {
+                var x = getRandomInt(0, screenWidth);
+                var y = getRandomInt(0, screenHeight);
+                foods.add(createFood(game, x, y, 5, COLOR.BLUE));
+            }
+
+            lblGeneration = game.add.text(16, 16, 'Generation: ' + generation, { fontSize: '16px', fill: '#000' });
+
+            // generating organisms
+            for (var i = 0; i < MAX_ORGANISMS; i++) {
+                var organism = new Organism(game, getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, 0, COLOR.BLACK);
+                organisms.push(organism);
+            }
+
+            STARTED = true;
+
+            setTimeout(function(){ generationManager() }, generationTimeInSeconds * 1000);
+        };
 
         function create() {
             game.physics.startSystem(Phaser.Physics.ARCADE);
         };
 
         function preload() {
-            //scoreText = game.add.text(16, 16, 'score: 0', { fontSize: '32px', fill: '#000' });
-
             game.stage.backgroundColor =  COLOR.WHITE;
-
             cursors = game.input.keyboard.createCursorKeys();
-
-            foods = game.add.group();
-            foods.enableBody = true;
-            for (var i=0; i<maxFood; i++) {
-                var x = getRandomInt(0, screenWidth);
-                var y = getRandomInt(0, screenHeight);
-                foods.add(createFood(game, x, y, 5, COLOR.BLUE));
-            }
-
-            // generating organisms
-            for (var i=0; i<20; i++) {
-                var organism = new Organism(game, getRandomInt(0,screenWidth), getRandomInt(0,screenHeight), 10, 0, COLOR.BLACK);
-                organisms.push(organism);
-            }
+            generationManager();
         };
-
 
         function hasEaten(organism, food) {
             food.kill();
@@ -265,32 +297,38 @@ block content
         function update() {
             //game.physics.arcade.collide(player, foods);
 
-            for (var i=0; i<organisms.length; i++) {
-                var organism = organisms[i];
-                game.physics.arcade.overlap(organism._organism, foods, hasEaten, null, this);
+            if (STARTED) {
+                for (var i=0; i<organisms.length; i++) {
+                    var organism = organisms[i];
+                    if (game.physics.arcade.overlap(organism._organism, foods, hasEaten, null, this)) {
+                        var antScore = organism.score
+                        organism.score += 1;
+                    };
 
-                if (organism.closestFood) {
-                    organism.closestFood.kill();
-                }
-                var closestFood = getClosestFood(organism, foods);
-                if (closestFood) {
-                    organism.closestFood = outstandCircle(game, closestFood.x - 5, closestFood.y - 5, 15, "40", COLOR.RED);
-                    var x = [[]]
-                    var xClosestFood = 0.0;
-                    var yClosestFood = 0.0;
+                    /*
                     if (organism.closestFood) {
-                        xClosestFood = organism.closestFood.x;
-                        yClosestFood = organism.closestFood.y;
+                        organism.closestFood.kill();
+                    }*/
+                    var closestFood = getClosestFood(organism, foods);
+                    if (closestFood) {
+                        //organism.closestFood = outstandCircle(game, closestFood.x - 5, closestFood.y - 5, 15, "40", COLOR.RED);
+                        var x = [[]]
+                        var xClosestFood = 0.0;
+                        var yClosestFood = 0.0;
+                        if (organism.closestFood) {
+                            xClosestFood = organism.closestFood.x;
+                            yClosestFood = organism.closestFood.y;
+                        }
+                        var prediction = organism.brain.predict([[organism._organism.x, organism._organism.y, organism.angle, organism.speed, xClosestFood, yClosestFood]]);
+                        var isUpDown = prediction[0][0] >= 0.5;
+                        var isLeftDown = prediction[0][1] >= 0.5;
+                        var isRightDown = prediction[0][2] >= 0.5;
+                        //console.log(isUpDown + " - " + isLeftDown + " - " + isRightDown)
+                        //console.log(prediction[0][0] + " - " + prediction[0][1] + " - " + prediction[0][2])
+                        organism.update(isUpDown, isLeftDown, isRightDown);
                     }
-                    var prediction = organism.brain.predict([[organism._organism.x, organism._organism.y, organism.angle, organism.speed, xClosestFood, yClosestFood]]);
-                    var isUpDown = prediction[0][0] >= 0.5;
-                    var isLeftDown = prediction[0][1] >= 0.5;
-                    var isRightDown = prediction[0][2] >= 0.5;
-                    console.log(isUpDown + " - " + isLeftDown + " - " + isRightDown)
-                    console.log(prediction[0][0] + " - " + prediction[0][1] + " - " + prediction[0][2])
-                    organism.update(isUpDown, isLeftDown, isRightDown);
+                    // keyboard
+                    //organism.update(cursors.up.isDown, cursors.left.isDown, cursors.right.isDown);
                 }
-                // keyboard
-                //organism.update(cursors.up.isDown, cursors.left.isDown, cursors.right.isDown);
             }
         };
