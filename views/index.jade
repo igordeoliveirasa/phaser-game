@@ -125,14 +125,14 @@ block content
             this.closestFood = null;
 
             this.getClosestFood = function(foods) {
-                var closestDistance = calculateDistance(this._organism.x, this._organism.y, foods.children[0].x, foods.children[0].y);
-                var closestFood = foods.children[0];
+                var closestDistance = null;//calculateDistance(this._organism.x, this._organism.y, foods.children[0].x, foods.children[0].y);
+                var closestFood = null;//foods.children[0];
 
                 for (var i=0; i<foods.children.length; i++) {
                     var food = foods.getAt(i);
                     if (food.alive) {
                         var distance = calculateDistance(this._organism.x, this._organism.y, food.x, food.y);
-                        if (distance<closestDistance) {
+                        if ( !closestDistance || !closestFood || distance < closestDistance) {
                             closestDistance = distance;
                             closestFood = food;
                         }
@@ -141,7 +141,9 @@ block content
                 if (this.closestFood) {
                     this.closestFood.kill();
                 }
-                this.closestFood = outstandCircle(game, closestFood.x-10, closestFood.y-10, 20, "40", COLOR.RED);
+                if (closestFood) {
+                    this.closestFood = outstandCircle(game, closestFood.x - 5, closestFood.y - 5, 15, "40", COLOR.RED);
+                }
             }
 
             this.update = function(isUpDown, isLeftDown, isRightDown) {
