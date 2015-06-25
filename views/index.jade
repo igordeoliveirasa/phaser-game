@@ -6,6 +6,46 @@ block content
 
     script.
 
+        // using ml / neural networks
+        var x = [
+            [0.0, 0.0],
+            [0.0, 1.0],
+            [1.0, 0.0],
+            [1.0, 1.0]
+        ];
+
+        var y = [
+            [1],
+            [0],
+            [0],
+            [1]
+        ];
+
+        var mlp = new ml.MLP({
+            'input' : x,
+            'label' : y,
+            'n_ins' : x[0].length,
+            'n_outs' : y[0].length,
+            'hidden_layer_sizes' : [3] // it coud be something like: [3,3,3] or [3,4,5] or anything
+        });
+
+        mlp.set('log level',1); // 0 : nothing, 1 : info, 2 : warning.
+        mlp.train({
+            'lr' : 0.6,
+            'epochs' : 20000
+        });
+
+        a = [
+            [0.0, 0.0],
+            [0.0, 1.0],
+            [1.0, 0.0],
+            [1.0, 1.0]
+        ];
+
+        console.log(mlp.predict(a));
+
+        // --------------------------------------------------------------------
+
         COLOR = {
             BLACK : "#000000",
             WHITE: "#ffffff",
