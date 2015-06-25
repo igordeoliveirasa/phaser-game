@@ -6,28 +6,27 @@ block content
 
     script.
 
-        // using ml / neural networks
-        var x = [
-            [0.0, 0.0],
-            [0.0, 1.0],
-            [1.0, 0.0],
-            [1.0, 1.0]
-        ];
-
-        var y = [
-            [1],
-            [0],
-            [0],
-            [1]
-        ];
-
+        /*
+        var x = [[200.0, 200.0, 90.0, 1.0, 200.0, 300.0]];
+        var y = [[1,2,3]]
         var mlp = new ml.MLP({
             'input' : x,
             'label' : y,
-            'n_ins' : x[0].length,
-            'n_outs' : y[0].length,
+            'n_ins' : 6,//x, y, angle, speed, x, y,
+            'n_outs' : 3,
             'hidden_layer_sizes' : [3] // it coud be something like: [3,3,3] or [3,4,5] or anything
         });
+
+        for (var i = 0; i < mlp.sigmoidLayers.length; i++) {
+            if (i !== mlp.sigmoidLayers.length - 1) {
+                console.log((i + 1) + "th hidden layer W : ", mlp.sigmoidLayers[i].W);
+                console.log((i + 1) + "th hidden layer b : ", mlp.sigmoidLayers[i].b);
+            } else {
+                console.log("output layer W : " + mlp.sigmoidLayers[i].W);
+                console.log("output layer b : " + mlp.sigmoidLayers[i].b);
+            }
+        }
+
 
         mlp.set('log level',1); // 0 : nothing, 1 : info, 2 : warning.
         mlp.train({
@@ -43,7 +42,7 @@ block content
         ];
 
         console.log(mlp.predict(a));
-
+        */
         // --------------------------------------------------------------------
 
         COLOR = {
@@ -115,36 +114,69 @@ block content
             return Math.sqrt(xs + ys);
         }
 
-        var Organism = function(game, x, y, w, color) {
+        function getClosestFood(organism, foods) {
+            var closestDistance = null
+            var closestFood = null;
+
+            for (var i=0; i<foods.children.length; i++) {
+                var food = foods.getAt(i);
+                if (food.alive) {
+                    var distance = calculateDistance(organism._organism.x, organism._organism.y, food.x, food.y);
+                    if ( !closestDistance || !closestFood || distance < closestDistance) {
+                        closestDistance = distance;
+                        closestFood = food;
+                    }
+                }
+            }
+            return closestFood;
+        }
+
+        var Organism = function(game, x, y, w, angle, color) {
             this._organism = createPlayer(game, x, y, w, color)
-            this.angle = 0;
+            this.angle = angle;
             this.speed = 0.0;
             this.maxSpeed = 5;
             this.acceleration = 0.1;
             this.reduction = 0.5;
-            this.closestFood = null;
+            this.brain = new ml.MLP({
+                'input' : [
+                    [100.0, 100.0, 0.0, 0.5, 110.0, 110.0],
+                    [110.0, 110.0, 0.0, 0.5, 100.0, 100.0],
+                ],
+                'label' : [
+                    [1.0, 0.0, 1.0],
+                    [1.0, 1.0, 0.0],
+                ],
+                'n_ins' : 6,//x, y, angle, speed, x, y,
+                'n_outs' : 3,
+                'hidden_layer_sizes' : [3] // it coud be something like: [3,3,3] or [3,4,5] or anything
+            });
+            //            this.brain.train({
+            //                'lr' : 0.6,
+            //                'epochs' : 20000
+            //            });
 
-            this.getClosestFood = function(foods) {
-                var closestDistance = null;//calculateDistance(this._organism.x, this._organism.y, foods.children[0].x, foods.children[0].y);
-                var closestFood = null;//foods.children[0];
+            // initializing randomically
 
-                for (var i=0; i<foods.children.length; i++) {
-                    var food = foods.getAt(i);
-                    if (food.alive) {
-                        var distance = calculateDistance(this._organism.x, this._organism.y, food.x, food.y);
-                        if ( !closestDistance || !closestFood || distance < closestDistance) {
-                            closestDistance = distance;
-                            closestFood = food;
+            for (var i = 0; i < this.brain.sigmoidLayers.length; i++) {
+                if (i !== this.brain.sigmoidLayers.length - 1) {
+                    for (var j=0; j<this.brain.sigmoidLayers[i].W.length; j++) {
+                        for (var k=0; k<this.brain.sigmoidLayers[i].W[j].length; k++) {
+                            //console.log("antes: " + this.brain.sigmoidLayers[i].W[j][k]);
+                            this.brain.sigmoidLayers[i].W[j][k] = getRandomInt(-100000000000000000, 100000000000000000) / 100000000000000000.0;
+                            //console.log("depois: " + this.brain.sigmoidLayers[i].W[j][k]);
                         }
                     }
-                }
-                if (this.closestFood) {
-                    this.closestFood.kill();
-                }
-                if (closestFood) {
-                    this.closestFood = outstandCircle(game, closestFood.x - 5, closestFood.y - 5, 15, "40", COLOR.RED);
+
+                    //console.log((i + 1) + "th hidden layer W : ", this.brain.sigmoidLayers[i].W);
+                    //console.log((i + 1) + "th hidden layer b : ", this.brain.sigmoidLayers[i].b);
+                } else {
+                    //console.log("output layer W : " + mlp.sigmoidLayers[i].W);
+                    //console.log("output layer b : " + mlp.sigmoidLayers[i].b);
                 }
             }
+
+            this.closestFood = getClosestFood(this, foods);
 
             this.update = function(isUpDown, isLeftDown, isRightDown) {
                 if (isUpDown || isLeftDown || isRightDown) {
@@ -196,6 +228,9 @@ block content
         game = new Phaser.Game(screenWidth, screenHeight, Phaser.AUTO, '', {preload: preload, create: create, update: update});
         maxFood = 200;
 
+        organisms = [];
+
+
         function create() {
             game.physics.startSystem(Phaser.Physics.ARCADE);
         };
@@ -215,19 +250,47 @@ block content
                 foods.add(createFood(game, x, y, 5, COLOR.BLUE));
             }
 
-            organism = new Organism(game, 200, 200, 10, COLOR.BLACK);
+            // generating organisms
+            for (var i=0; i<20; i++) {
+                var organism = new Organism(game, getRandomInt(0,screenWidth), getRandomInt(0,screenHeight), 10, 0, COLOR.BLACK);
+                organisms.push(organism);
+            }
         };
 
 
         function hasEaten(organism, food) {
-            //player.x =  lastX;
-            //player.y = lastY;
             food.kill();
         }
 
         function update() {
             //game.physics.arcade.collide(player, foods);
-            game.physics.arcade.overlap(organism._organism, foods, hasEaten, null, this);
-            organism.getClosestFood(foods);
-            organism.update(cursors.up.isDown, cursors.left.isDown, cursors.right.isDown);
+
+            for (var i=0; i<organisms.length; i++) {
+                var organism = organisms[i];
+                game.physics.arcade.overlap(organism._organism, foods, hasEaten, null, this);
+
+                if (organism.closestFood) {
+                    organism.closestFood.kill();
+                }
+                var closestFood = getClosestFood(organism, foods);
+                if (closestFood) {
+                    organism.closestFood = outstandCircle(game, closestFood.x - 5, closestFood.y - 5, 15, "40", COLOR.RED);
+                    var x = [[]]
+                    var xClosestFood = 0.0;
+                    var yClosestFood = 0.0;
+                    if (organism.closestFood) {
+                        xClosestFood = organism.closestFood.x;
+                        yClosestFood = organism.closestFood.y;
+                    }
+                    var prediction = organism.brain.predict([[organism._organism.x, organism._organism.y, organism.angle, organism.speed, xClosestFood, yClosestFood]]);
+                    var isUpDown = prediction[0][0] >= 0.5;
+                    var isLeftDown = prediction[0][1] >= 0.5;
+                    var isRightDown = prediction[0][2] >= 0.5;
+                    console.log(isUpDown + " - " + isLeftDown + " - " + isRightDown)
+                    console.log(prediction[0][0] + " - " + prediction[0][1] + " - " + prediction[0][2])
+                    organism.update(isUpDown, isLeftDown, isRightDown);
+                }
+                // keyboard
+                //organism.update(cursors.up.isDown, cursors.left.isDown, cursors.right.isDown);
+            }
         };
