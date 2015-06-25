@@ -271,7 +271,7 @@ block content
 
             // generating organisms
             for (var i = 0; i < MAX_ORGANISMS; i++) {
-                var organism = new Organism(game, getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, 0, COLOR.BLACK);
+                var organism = new Organism(game, getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(0, 360), COLOR.BLACK);
                 organisms.push(organism);
             }
 
