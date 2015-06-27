@@ -6,73 +6,9 @@ block content
 
     script.
 
-        COLOR = {
-            BLACK : "#000000",
-            WHITE: "#ffffff",
-            BLUE: "#0000ff",
-            RED: "#ff0000"
-        };
-
-        function getRandomInt(min, max) {
-            return Math.floor(Math.random() * (max - min + 1) + min );
-        }
-
-        function createCircle(game, x, y, w, lineWidthInString, strokeStyle, fillStyle) {
-            // Create BitmapData
-            var bmd = game.add.bitmapData(w, w)
-
-            // Draw circle
-            bmd.ctx.beginPath();
-
-            if (strokeStyle) {
-                bmd.ctx.strokeStyle = strokeStyle;
-                bmd.ctx.stroke();
-            }
-
-            if (lineWidthInString) {
-                bmd.ctx.lineWidth = lineWidthInString;
-            }
-
-            bmd.ctx.arc(w / 2, w / 2, w / 2, 0, Math.PI * 2, true);
-            if (fillStyle) {
-                bmd.ctx.fillStyle = fillStyle;
-                bmd.ctx.fill();
-            }
-
-            bmd.ctx.closePath();
-
-            var sprite = game.add.sprite(x, y, bmd);
-            return sprite;
-        };
-
-
-        function createPlayer(game, x, y, w, color) {
-            var player = createCircle(game, x, y, w, null, null, color);
-            game.physics.arcade.enable(player);
-            player.body.collideWorldBounds = true;
-            player.body.bounce.y=0.25;
-            return player;
-        }
-
-        function outstandCircle(game, x, y, w) {
-            var sprite = createCircle(game, x, y, w, null, null, 'rgba(255,0,0,0.5)');
-            return sprite;
-        }
-
         function createFood(game, x, y, w, color) {
             var sprite = createCircle(game, x, y, w, null, null, color);
             return sprite;
-        }
-
-        function calculateDistance(x1, y1, x2, y2) {
-            var xs = 0;
-            var ys = 0;
-            xs = Math.abs(x2 - x1);
-            xs = xs * xs;
-
-            ys = Math.abs(y2 - y1);
-            ys = ys * ys;
-            return Math.sqrt(xs + ys);
         }
 
         function getClosestFood(organism, foods) {
@@ -92,246 +28,6 @@ block content
             return closestFood;
         }
 
-        function createBrain() {
-            var ret = new ml.MLP({
-                'input' : [
-                    [0.0, 0.5, 110.0, 110.0],
-                    //[100.0, 100.0, 0.0, 0.5, 110.0, 110.0],
-                    //[110.0, 110.0, 0.0, 0.5, 100.0, 100.0],
-                ],
-                'label' : [
-                    [1.0, 0.0, 1.0],
-                    [1.0, 1.0, 0.0],
-                ],
-                'n_ins' : 4,//6,//x, y, angle, speed, x, y,
-                'n_outs' : 3,
-                'hidden_layer_sizes' : [1] // it coud be something like: [3,3,3] or [3,4,5] or anything
-            });
-            return ret;
-        }
-
-        function fillBrainRandomically(brain) {
-            for (var i = 0; i < brain.sigmoidLayers.length; i++) {
-                if (i !== brain.sigmoidLayers.length - 1) {
-                    for (var j=0; j<brain.sigmoidLayers[i].W.length; j++) {
-                        for (var k=0; k<brain.sigmoidLayers[i].W[j].length; k++) {
-                            //console.log("antes: " + this.brain.sigmoidLayers[i].W[j][k]);
-                            brain.sigmoidLayers[i].W[j][k] = getRandomInt(-100000000000000000, 100000000000000000) / 100000000000000000.0;
-                            //console.log("depois: " + this.brain.sigmoidLayers[i].W[j][k]);
-                        }
-                    }
-                    for (var j=0; j<brain.sigmoidLayers[i].b.length; j++) {
-                        brain.sigmoidLayers[i].b[j] = getRandomInt(-100000000000000000, 100000000000000000) / 100000000000000000.0;
-                    }
-                    //console.log((i+1)+"th hidden layer b : ", brainA.sigmoidLayers[i].b);
-                    //console.log((i + 1) + "th hidden layer W : ", this.brain.sigmoidLayers[i].W);
-                    //console.log((i + 1) + "th hidden layer b : ", this.brain.sigmoidLayers[i].b);
-                } else {
-                    //console.log("output layer W : " + this.brain.sigmoidLayers[i].W);
-                    //console.log("output layer b : " + this.brain.sigmoidLayers[i].b);
-                }
-            }
-        }
-
-        function crossover(organismA, organismB) {
-            var ret = createBrain();
-            var brainA = organismA.brain;
-            var brainB = organismB.brain;
-
-            for (var i = 0; i < brainA.sigmoidLayers.length; i++) {
-                if (i !== brainA.sigmoidLayers.length - 1) {
-                    for (var j = 0; j < brainA.sigmoidLayers[i].W.length; j++) {
-                        for (var k = 0; k < brainA.sigmoidLayers[i].W[j].length; k++) {
-                            //console.log("antes: " + this.brain.sigmoidLayers[i].W[j][k]);
-                            var weight = 0;
-                            if ((k+1) <= Math.abs(brainA.sigmoidLayers[i].W[j].length/2)) {
-                                weight = brainA.sigmoidLayers[i].W[j][k];
-                            }
-                            else {
-                                weight = brainB.sigmoidLayers[i].W[j][k];
-                            }
-                            ret.sigmoidLayers[i].W[j][k] = weight;
-                            //console.log("depois: " + this.brain.sigmoidLayers[i].W[j][k]);
-                        }
-                    }
-                    //console.log((i + 1) + "th hidden layer W : ", this.brain.sigmoidLayers[i].W);
-                    //console.log((i + 1) + "th hidden layer b : ", this.brain.sigmoidLayers[i].b);
-                } else {
-                    //console.log("output layer W : " + this.brain.sigmoidLayers[i].W);
-                    //console.log("output layer b : " + this.brain.sigmoidLayers[i].b);
-                }
-            }
-
-            return ret;
-        }
-
-        function crossoverMod(organismA, organismB) {
-            var ret = createBrain();
-            var brainA = organismA.brain;
-            var brainB = organismB.brain;
-
-            for (var i = 0; i < brainA.sigmoidLayers.length; i++) {
-                if (i !== brainA.sigmoidLayers.length - 1) {
-                    for (var j = 0; j < brainA.sigmoidLayers[i].W.length; j++) {
-                        for (var k = 0; k < brainA.sigmoidLayers[i].W[j].length; k++) {
-
-                            var weight = 0;
-                            if ((k+1)%2==0) {
-                                weight = brainA.sigmoidLayers[i].W[j][k];
-                            }
-                            else {
-                                weight = brainB.sigmoidLayers[i].W[j][k];
-                            }
-                            //console.log("antes: " + this.brain.sigmoidLayers[i].W[j][k]);
-                            ret.sigmoidLayers[i].W[j][k] = weight;
-                            //console.log("depois: " + this.brain.sigmoidLayers[i].W[j][k]);
-                        }
-                    }
-
-                    for (var j=0; j<brainA.sigmoidLayers[i].b.length; j++) {
-                        var bias = 0;
-                        if ((j+1) % 2 == 0) {
-                            bias = brainA.sigmoidLayers[i].b[j];
-                        }
-                        else {
-                            bias = brainB.sigmoidLayers[i].b[j];
-                        }
-                        ret.sigmoidLayers[i].b[j] = bias;
-                    }
-
-                    //console.log((i+1)+"th hidden layer b : ", brainA.sigmoidLayers[i].b);
-                    //console.log((i + 1) + "th hidden layer W : ", this.brain.sigmoidLayers[i].W);
-                    //console.log((i + 1) + "th hidden layer b : ", this.brain.sigmoidLayers[i].b);
-                } else {
-                    //console.log("output layer W : " + this.brain.sigmoidLayers[i].W);
-                    //console.log("output layer b : " + this.brain.sigmoidLayers[i].b);
-                }
-            }
-
-            return ret;
-        }
-
-
-        function crossoverAvg(organismA, organismB) {
-            var ret = createBrain();
-            var brainA = organismA.brain;
-            var brainB = organismB.brain;
-
-            for (var i = 0; i < brainA.sigmoidLayers.length; i++) {
-                if (i !== brainA.sigmoidLayers.length - 1) {
-                    for (var j = 0; j < brainA.sigmoidLayers[i].W.length; j++) {
-                        for (var k = 0; k < brainA.sigmoidLayers[i].W[j].length; k++) {
-                            //console.log("antes: " + this.brain.sigmoidLayers[i].W[j][k]);
-                            ret.sigmoidLayers[i].W[j][k] = (brainA.sigmoidLayers[i].W[j][k] + brainB.sigmoidLayers[i].W[j][k])/2;
-                            //console.log("depois: " + this.brain.sigmoidLayers[i].W[j][k]);
-                        }
-                    }
-
-                    for (var j=0; j<brainA.sigmoidLayers[i].b.length; j++) {
-                        ret.sigmoidLayers[i].b[j] = (brainA.sigmoidLayers[i].b[j] + brainB.sigmoidLayers[i].b[j])/2;
-                    }
-
-                    //console.log((i+1)+"th hidden layer b : ", brainA.sigmoidLayers[i].b);
-                    //console.log((i + 1) + "th hidden layer W : ", this.brain.sigmoidLayers[i].W);
-                    //console.log((i + 1) + "th hidden layer b : ", this.brain.sigmoidLayers[i].b);
-                } else {
-                    //console.log("output layer W : " + this.brain.sigmoidLayers[i].W);
-                    //console.log("output layer b : " + this.brain.sigmoidLayers[i].b);
-                }
-            }
-
-            return ret;
-        }
-
-
-        function mutate(brain) {
-            for (var i = 0; i < brain.sigmoidLayers.length; i++) {
-                if (i !== brain.sigmoidLayers.length - 1) {
-                    for (var j = 0; j < brain.sigmoidLayers[i].W.length; j++) {
-                        for (var k = 0; k < brain.sigmoidLayers[i].W[j].length; k++) {
-                            //console.log("antes: " + this.brain.sigmoidLayers[i].W[j][k]);
-                            if (getRandomInt(0,1)==1) {
-                                brain.sigmoidLayers[i].W[j][k] = getRandomInt(-100000000000000000, 100000000000000000) / 100000000000000000;
-                            }
-                        }
-                    }
-
-                    for (var j=0; j<brain.sigmoidLayers[i].b.length; j++) {
-                        if (getRandomInt(0,1)==1) {
-                            brain.sigmoidLayers[i].b[j] = getRandomInt(-100000000000000000, 100000000000000000) / 100000000000000000;
-                        }
-                    }
-                } else {
-                }
-            }
-            return brain;
-        }
-
-
-        var Organism = function(game, x, y, w, angle, color, brain, score) {
-            this._organism = createPlayer(game, x, y, w, color)
-            this.angle = angle;
-            this.speed = 0.0;
-            this.maxSpeed = 2;
-            this.acceleration = 0.1;
-            this.reduction = 0.5;
-            this.score = score;
-            this.brain = brain;
-            this.firstClosestFood = null;
-
-
-
-
-            this.update = function(isUpDown, isLeftDown, isRightDown) {
-                if (
-                        //(isUpDown && !isLeftDown && !isRightDown) ||
-                        (isUpDown &&  isLeftDown && !isRightDown) ||
-                        (isUpDown && !isLeftDown &&  isRightDown) ||
-                        (!isUpDown && isLeftDown && !isRightDown) ||
-                        (!isUpDown && !isLeftDown && isRightDown)
-                ) {
-                    if (isUpDown)
-                    {
-                        this.speed += this.acceleration;
-                    }
-                    if (isLeftDown) {
-                        this.angle -= 5 + this.speed;//(this.speed);
-                    }
-                    else if (isRightDown) {
-                        this.angle += 5 + this.speed;//(this.speed);
-                    }
-                }
-
-                if (!isUpDown)
-                {
-                    if (this.speed > 0) {
-                        this.speed = this.speed - this.reduction;
-                    }
-
-                    if (this.speed < 0) {
-                        this.speed = 0;
-                    }
-                }
-
-                if (this.angle > 360) {
-                    this.angle -= 360;
-                }
-                if (this.angle < -360) {
-                    this.angle += 360;
-                }
-
-                lastX = this._organism.x;
-                lastY = this._organism.y;
-                if (this.speed > this.maxSpeed) {
-                    this.speed = this.maxSpeed;
-                }
-
-                var radians = Math.PI/180 * this.angle;
-                this._organism.x += this.speed * Math.cos(radians);
-                this._organism.y += this.speed * Math.sin(radians);
-            }
-        }
-
         screenWidth = 500;
         screenHeight = 500;
 
@@ -341,12 +37,11 @@ block content
 
         var foods = null;
 
-
         MAX_ORGANISMS = 50;
         brains = [];
         organisms = [];
         generation = 0;
-        generationTimeInSeconds = 2;
+        generationTimeInSeconds = 5;
 
 
         STARTED = false;
@@ -372,7 +67,6 @@ block content
 
             STARTED = false;
             generation += 1;
-
 
             var brains = [];
             var newPopulation = [];
@@ -405,7 +99,6 @@ block content
                 }
 
                 // crossing them
-
                 var newPopulationCount = newPopulation.length;
                 var i = 0;
                 while (newPopulationCount <= MAX_ORGANISMS) {
@@ -416,13 +109,17 @@ block content
                     var male = males[i];
                     var female = females[i];
 
-                    console.log("crossing: " + male.score + " with: " + female.score);
+                    //console.log("crossing: " + male.score + " with: " + female.score);
 
-                    //if (male.score > 0 && female.score > 0) {
+                    if (male.score > 0 && female.score > 0) {
                         var score = 0//Math.floor((male.score+female.score)/2);
 
                         var brainA = crossoverAvg(male, female);
                         newPopulation.push(new Organism(game, getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(0, 360), COLOR.BLACK, brainA, score));
+
+                        var brainB = mutate(crossoverAvg(male, female));
+                        newPopulation.push(new Organism(game, getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(0, 360), COLOR.BLACK, brainB, score));
+
                         //newPopulation.push(new Organism(game, getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(0, 360), COLOR.BLACK, mutate(brainA), score));
                         //newPopulation.push(new Organism(game, getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(0, 360), COLOR.BLACK, mutate(brainB), score));
 
@@ -434,7 +131,7 @@ block content
                         //
                         //                        newPopulation.push(new Organism(game, getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(0, 360), COLOR.BLACK, mutate(brainA), score));
                         //                        newPopulation.push(new Organism(game, getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(0, 360), COLOR.BLACK, mutate(brainB), score));
-                    //}
+                    }
 
                     i += 1;
                     newPopulationCount = newPopulation.length;
@@ -479,8 +176,10 @@ block content
             generationManager();
         };
 
+        currentKilledFood = null;
         function hasEaten(organism, food) {
             food.kill();
+            currentKilledFood = food;
         }
 
         function update() {
@@ -490,8 +189,9 @@ block content
                 for (var i=0; i<organisms.length; i++) {
                     var organism = organisms[i];
                     if (game.physics.arcade.overlap(organism._organism, foods, hasEaten, null, this)) {
-                        var antScore = organism.score
-                        organism.score += 1;
+                        if (currentKilledFood == organism.target) {
+                            organism.score += 1;
+                        }
                     };
 
                     /*
@@ -499,17 +199,20 @@ block content
                         organism.closestFood.kill();
                     }*/
 
-                    var closestFood = getClosestFood(organism, foods);
-                    if (closestFood) {
+
+                    if (!organism.target || !organism.target.alive) {
+                        organism.target = getClosestFood(organism, foods);
+                    }
+                    if (organism.target) {
                         //closestFood = outstandCircle(game, closestFood.x - 5, closestFood.y - 5, 15, "40", COLOR.RED);
                         //var prediction = organism.brain.predict([[organism._organism.x, organism._organism.y, organism.angle, organism.speed, closestFood.x, closestFood.y]]);
-                        var prediction = organism.brain.predict([[organism.angle, organism.speed, organism._organism.x-closestFood.x, organism._organism.y-closestFood.y]]);
-                        var isUpDown = prediction[0][0] >= 0.5;
-                        var isLeftDown = prediction[0][1] >= 0.5;
-                        var isRightDown = prediction[0][2] >= 0.5;
+                        var prediction = organism.brain.predict([[organism._organism.x, organism._organism.y, organism.angle/100.0, organism.target.x, organism.target.y]]);
+                        var up = prediction[0][0] >= 0.5;
+                        var left = prediction[0][1] >= 0.5;
+                        var right = prediction[0][2] >= 0.5;
                         //console.log(isUpDown + " - " + isLeftDown + " - " + isRightDown)
                         //console.log(prediction[0][0] + " - " + prediction[0][1] + " - " + prediction[0][2])
-                        organism.update(isUpDown, isLeftDown, isRightDown);
+                        organism.update(up, left, right);
                     }
                     // keyboard
                     //organism.update(cursors.up.isDown, cursors.left.isDown, cursors.right.isDown);
