@@ -15,22 +15,38 @@ var Individual = function(game, id, x, y, w, angle, color, brain, score) {
 
     this.update = function(left, right) {
 
-        var up = left || right;
-
-        if (up) {
-            this.speed = 2;
-        }
-        else {
+        if (this.energy <= 0) {
+            left = 0;
+            right = 0;
             this.speed = 0;
+            return;
         }
+        var max_speed = 1.5;
+        var left_speed = max_speed * left;
+        var right_speed = max_speed * right;
+        this.speed = max_speed * ((left_speed + right_speed)/2.0);
 
-        if (left && !right) {
-            this.angle += 15;// + this.speed;
-        }
 
-        if (right && !left) {
-            this.angle -= 15;//5 + this.speed;
-        }
+
+        //this.angle += ((this.angle * left) + (this.angle * right)) / 2;
+
+
+        //var up = true;//left || right;
+
+        //if (up) {
+        //    this.speed = 2;
+        //}
+        //else {
+        //    this.speed = 0;
+        //}
+
+        //this.speed = (left + right) * 1.5;//left * right;
+
+
+        //this.angle = ((this.angle * left_speed) / max_speed) + ((this.angle * right_speed) / max_speed) / 2;
+
+        this.angle += 90 * left;
+        this.angle -= 90 * right;
 
         if (this.angle > 360) {
             this.angle -= 360;
@@ -51,4 +67,5 @@ var Individual = function(game, id, x, y, w, angle, color, brain, score) {
     this.score = score;
     this.brain = brain;
     this.target = null;
+    this.energy = 1000;
 }

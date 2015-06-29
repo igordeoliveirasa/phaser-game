@@ -36,15 +36,15 @@ block content
         game = new Phaser.Game(screenWidth, screenHeight, Phaser.AUTO, '', {preload: preload, create: create, update: update});
 
 
-        maxFood = 50;
+        maxFood = 20;
 
         var foods = null;
 
-        MAX_INDIVIDUALS = 50;
+        MAX_INDIVIDUALS = 20;
         brains = [];
         population = [];
         generation = 0;
-        generationTimeInSeconds = 2;
+        GENERATION_TIME_IN_SECS = 2;
 
         lastId = 0;
         function generateId() {
@@ -61,6 +61,12 @@ block content
             });
         }
 
+        function sortByLowestScore(population) {
+            return population.sort(function(individualA, individualB) {
+                return (individualA.score - individualB.score);
+            });
+        }
+
         function createFoods() {
             var foods = game.add.group();
             foods.enableBody = true;
@@ -70,25 +76,64 @@ block content
             return foods;
         }
 
+        function getTotalFitness(population) {
+            var ret = 0;
+            for (var i=0; i<population.length; i++) {
+                var individual = population[i];
+                ret += individual.score * 1.0;// * individual.score;
+            }
+            return ret;
+        }
+
         function getFittest(population) {
             var sorted = sortByHighestScore(population);
             return sorted[0];
         }
 
         function crossIndividuals(individualA, individualB) {
-            var newBrain = crossoverAvg(individualA.brain, individualB.brain);
+            //var newBrain = individualA.brain;//crossoverBlock(individualA.brain, individualB.brain);
+            var newBrain = crossoverProb(individualA.brain, individualB.brain, 0.05, 0.5);
             // mutation rate: 1 in 100
-            if (getRandomInt(1,100)==1) {
-                newBrain = mutate(newBrain);
-                console.log("mutation occurred!");
-            }
+            //if (getRandomInt(1,100)==1) {
+            //    newBrain = mutate(newBrain);
+            //}
             return new Individual(game, generateId(), getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(-360, 360), COLOR.BLACK, newBrain, 0);
+        }
+
+        function generateProbabilities(population, totalFitness) {
+            var previousProbability = 0;
+            var probabilities = [];
+            for (var i=0; i<population.length; i++) {
+                var individual = population[i];
+                var score = 0;
+                if (totalFitness>0) {
+                    score = (individual.score/totalFitness);
+                }
+                previousProbability += score;
+                probabilities.push(previousProbability);
+            }
+            return probabilities;
+        }
+
+        function rouletteSelection(population, probabilities) {
+            var selected = null;
+            while (selected == null) {
+                var random = getRandomInt(0, 100) / 100.0;
+                for (var i=0; i<probabilities.length; i++) {
+                    if (random <= probabilities[i]) {
+                        selected = population[i];
+                        break;
+                    }
+                }
+            }
+            return selected;
         }
 
         function generationManager(){
 
             STARTED = false;
             generation += 1;
+
 
             var brains = [];
             var newPopulation = [];
@@ -98,7 +143,6 @@ block content
                 for (var i = 0; i < MAX_INDIVIDUALS; i++) {
                     var brain = createBrain();
                     fillBrainRandomically(brain)
-                    //brains.push(brain);
                     var individual = new Individual(game, generateId(), getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(-360, 360), COLOR.BLACK, brain, 0);
                     newPopulation.push(individual);
                 }
@@ -108,6 +152,7 @@ block content
 
                 // getting fittest individual
                 var fittestIndividual = getFittest(population);
+                fittestIndividual.score = 0;
 
                 // elitism
                 newPopulation.push(fittestIndividual);
@@ -119,56 +164,77 @@ block content
                 //                    newPopulation.push();
                 //                }
 
-                // crossing with the bests
-                if (fittestIndividual.score > 0) {
+
+                // crossing by fitness probability
+                var totalFitness = getTotalFitness(population);
+                population = sortByLowestScore(population);
+                var probabilities = generateProbabilities(population, totalFitness);
+                if (totalFitness>0) {
                     for (var i=newPopulation.length; i<MAX_INDIVIDUALS; i++) {
-                        var parent = population[i];
-                        if (parent.id != fittestIndividual.id && parent.score>0) {
-                            //var newBrain = crossoverAvg(fittestIndividual.brain, parent.brain);
-                            //                            var newBrain = crossover(fittestIndividual.brain, parent.brain);
-                            //                            // mutation rate: 1 in 100
-                            //                            if (getRandomInt(1,100)==1) {
-                            //                                newBrain = mutate(newBrain);
-                            //                                console.log("mutation occurred!");
-                            //                            }
-                            //                            var individual = new Individual(game, generateId(), getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(-360, 360), COLOR.BLACK, newBrain, 0);
-                            newPopulation.push(crossIndividuals(fittestIndividual, parent));
-                            newPopulation.push(crossIndividuals(parent, fittestIndividual));
+                        while(true) {
+                            var individualA = rouletteSelection(population, probabilities);
+                            var individualB = rouletteSelection(population, probabilities);
+                            if (individualA.id != individualB.id) {
+                                newPopulation.push(crossIndividuals(individualA, individualB));
+                                if (individualA.score>0) {
+                                    //console.log("Id A: " + individualA.id + " Id B: " + individualB.id);
+                                    //console.log("Score A: " + individualA.score + " Score B: " + individualB.score);
+                                }
+
+                                break;
+                            }
+                        }
+                    }
+                }
+                else {
+                    while (newPopulation.length < MAX_INDIVIDUALS) {
+                        var individualA = population[getRandomInt(0, MAX_INDIVIDUALS - 1)];
+                        var individualB = population[getRandomInt(0, MAX_INDIVIDUALS - 1)];
+                        if (individualA.id != individualB.id) {
+                            newPopulation.push(crossIndividuals(individualA, individualB));
                         }
                     }
                 }
 
 
-                //                // crossing with anyone in order to fill up
-                //                while (newPopulation.length<MAX_INDIVIDUALS) {
-                //                    var parent = population[getRandomInt(0,MAX_INDIVIDUALS-1)];
-                //                    if (parent.id != fittestIndividual.id) {
-                //                        var newBrain = crossover(fittestIndividual.brain, parent.brain);
-                //                        if (getRandomInt(1, 100) == 1) {
-                //                            newBrain = mutate(newBrain);
-                //                            console.log("mutation occurred!");
+                // crossing with the bests
+                //                if (fittestIndividual.score > 0) {
+                //                    for (var i=newPopulation.length; i<MAX_INDIVIDUALS; i++) {
+                //                        var parent = population[i];
+                //                        if (parent.id != fittestIndividual.id && parent.score>0) {
+                //                            //var newBrain = crossoverAvg(fittestIndividual.brain, parent.brain);
+                //                            //                            var newBrain = crossover(fittestIndividual.brain, parent.brain);
+                //                            //                            // mutation rate: 1 in 100
+                //                            //                            if (getRandomInt(1,100)==1) {
+                //                            //                                newBrain = mutate(newBrain);
+                //                            //                                console.log("mutation occurred!");
+                //                            //                            }
+                //                            //                            var individual = new Individual(game, generateId(), getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(-360, 360), COLOR.BLACK, newBrain, 0);
+                //                            newPopulation.push(crossIndividuals(fittestIndividual, parent));
+                //                            newPopulation.push(crossIndividuals(parent, fittestIndividual));
                 //                        }
-                //                        var individual = new Individual(game, generateId(), getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(-360, 360), COLOR.BLACK, newBrain, 0);
-                //                        newPopulation.push(individual);
                 //                    }
                 //                }
 
+
+
+
                 // crossing with anyone in order to fill up
-                while (newPopulation.length<MAX_INDIVIDUALS) {
-                    var parentA = population[getRandomInt(0,MAX_INDIVIDUALS-1)];
-                    var parentB = population[getRandomInt(0,MAX_INDIVIDUALS-1)];
-                    if (parentA.id != parentB.id) {
-                    //                        var newBrain = crossover(parentA.brain, parentB.brain);
-                    //                        if (getRandomInt(1, 100) == 1) {
-                    //                            newBrain = mutate(newBrain);
-                    //                            console.log("mutation occurred!");
-                    //                        }
-                    //                        var individual = new Individual(game, generateId(), getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(-360, 360), COLOR.BLACK, newBrain, 0);
-                    //                        newPopulation.push(individual);
-                        newPopulation.push(crossIndividuals(parentA, parentB));
-                        newPopulation.push(crossIndividuals(parentB, parentA));
-                    }
-                }
+                //                while (newPopulation.length<MAX_INDIVIDUALS) {
+                //                    var parentA = population[getRandomInt(0,MAX_INDIVIDUALS-1)];
+                //                    var parentB = population[getRandomInt(0,MAX_INDIVIDUALS-1)];
+                //                    if (parentA.id != parentB.id) {
+                //                    //                        var newBrain = crossover(parentA.brain, parentB.brain);
+                //                    //                        if (getRandomInt(1, 100) == 1) {
+                //                    //                            newBrain = mutate(newBrain);
+                //                    //                            console.log("mutation occurred!");
+                //                    //                        }
+                //                    //                        var individual = new Individual(game, generateId(), getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 10, getRandomInt(-360, 360), COLOR.BLACK, newBrain, 0);
+                //                    //                        newPopulation.push(individual);
+                //                        newPopulation.push(crossIndividuals(parentA, parentB));
+                //                        newPopulation.push(crossIndividuals(parentB, parentA));
+                //                    }
+                //                }
             }
 
             // creating creatures
@@ -187,7 +253,7 @@ block content
 
             STARTED = true;
 
-            setTimeout(function(){ generationManager() }, generationTimeInSeconds * 1000);
+            //            setTimeout(function(){ generationManager() }, GENERATION_TIME_IN_SECS * 1000);
         };
 
         function create() {
@@ -197,34 +263,81 @@ block content
 
         function preload() {
             game.stage.backgroundColor =  COLOR.WHITE;
+            game.stage.disableVisibilityChange = true;
             cursors = game.input.keyboard.createCursorKeys();
-            generationManager();
         };
 
+        //        currentIndividual = null;
         function hasEaten(organismShape, food) {
+            //            if (currentIndividual) {
+            //                if (currentIndividual.target == food) {
+            //                    currentIndividual.score += 1;
+            //                    console.log("ganhou 1 ponto!")
+            //                }
+            //            }
+            //            currentIndividual = null;
             food.kill();
             for (var i = foods.countLiving(); i < maxFood; i++) {
                 foods.add(createFood(game, getRandomInt(0, screenWidth), getRandomInt(0, screenHeight), 5, COLOR.BLUE));
             }
         }
 
+        function getTotalOfEnergy(population) {
+            var ret = 0;
+            for (var i=0; i<population.length; i++) {
+                ret += population[i].energy;
+            }
+            return ret;
+        }
+
         function update() {
             //game.physics.arcade.collide(player, foods);
 
-            if (STARTED) {
+
+            if (!STARTED || getTotalOfEnergy(population) <= 0) {
+                generationManager();
+            }
+            else {
                 for (var i=0; i<population.length; i++) {
                     var individual = population[i];
+
                     if (game.physics.arcade.overlap(individual.shape, foods, hasEaten, null, this)) {
                         individual.score += 1;
-                    };
+                        individual.energy += 100;
+                    }
 
-                    target = getClosestFood(individual, foods);
-                    if (target) {
-                        var prediction = individual.brain.predict([[individual.angle, target.x - individual.shape.x, target.y - individual.shape.y]]);
-                        //console.log("Prediction: " + prediction);
-                        var left = prediction[0][0] >= 0.5;
-                        var right = prediction[0][1] >= 0.5;
-                        individual.update(left, right);
+                    //                    if (individual.target==null || !individual.target.alive) {
+                    //                        individual.target = getClosestFood(individual, foods);
+                    //                    }
+
+                    individual.target = getClosestFood(individual, foods);
+                    if (individual.target) {
+                        var speed = 0;
+                        if (individual.speed>0.0) {
+                            speed = individual.speed/100.0;
+                        }
+
+                        var angle = 0;
+                        if (individual.angle>0.0) {
+                            angle = individual.angle/1000.0;
+                        }
+
+                        var x = (individual.target.x - individual.shape.x);
+                        if (x>0) {
+                            x = x/1000.0;
+                        }
+
+                        var y = (individual.target.y - individual.shape.y);
+                        if (y>0) {
+                            y = y/1000.0;
+                        }
+
+                        var prediction = individual.brain.predict([[individual.energy/1000.0, speed, angle, x, y]]);
+                        individual.update(prediction[0][0], prediction[0][1]);
+                        individual.energy -= 1;
+                        if (individual.energy < 0) {
+                            individual.energy = 0;
+                        }
                     }
                     // keyboard
                     //organism.update(cursors.up.isDown, cursors.left.isDown, cursors.right.isDown);

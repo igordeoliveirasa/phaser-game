@@ -196,6 +196,89 @@ function crossoverBlock(brainA, brainB) {
 }
 
 
+function crossoverProb(brainA, brainB, mutationProb, mutationRate) {
+    var ret = createBrain();
+
+    for (var i = 0; i < brainA.sigmoidLayers.length; i++) {
+        if (i !== brainA.sigmoidLayers.length - 1) {
+            for (var j = 0; j < brainA.sigmoidLayers[i].W.length; j++) {
+                for (var k = 0; k < brainA.sigmoidLayers[i].W[j].length; k++) {
+                    var weight = 0;
+                    if (getRandomInt(0,1)==1) {
+                        weight = brainA.sigmoidLayers[i].W[j][k];
+                    }
+                    else {
+                        weight = brainB.sigmoidLayers[i].W[j][k];
+                    }
+
+                    var random = getRandomInt(0,100)/100.0;
+                    if (random <= mutationProb) {
+                        weight += weight * mutationRate;
+                    }
+                    ret.sigmoidLayers[i].W[j][k] = weight;
+                }
+            }
+
+            //for (var j=0; j<brainA.sigmoidLayers[i].b.length; j++) {
+            //    var bias = 0;
+            //    if (getRandomInt(0,1)==1) {
+            //        bias = brainA.sigmoidLayers[i].b[j];
+            //    }
+            //    else {
+            //        bias = brainB.sigmoidLayers[i].b[j];
+            //    }
+            //    var random = getRandomInt(0,100)/100.0;
+            //    if (random <= mutationProb) {
+            //        if (bias == 0) {
+            //            bias = 1;
+            //        } else {
+            //            bias = 0;
+            //        }
+            //    }
+            //    ret.sigmoidLayers[i].b[j] = bias;
+            //}
+        } else {
+            for (var j=0; j<brainA.sigmoidLayers[i].W.length; j++) {
+                for (var k = 0; k < brainA.sigmoidLayers[i].W[j].length; k++) {
+                    var weight = 0;
+                    if (getRandomInt(0,1)==1) {
+                        weight = brainA.sigmoidLayers[i].W[j][k];
+                    }
+                    else {
+                        weight = brainB.sigmoidLayers[i].W[j][k];
+                    }
+                    if (getRandomInt(0,100)/100.0 <= mutationProb) {
+                        weight += weight * mutationRate;
+                    }
+                    ret.sigmoidLayers[i].W[j][k] = weight;
+                }
+            }
+            //for (var j=0; j<brainA.sigmoidLayers[i].b.length; j++) {
+            //    var bias = 0;
+            //    if (getRandomInt(0,1)==1) {
+            //        bias = brainA.sigmoidLayers[i].b[j];
+            //    }
+            //    else {
+            //        bias = brainB.sigmoidLayers[i].b[j];
+            //    }
+            //
+            //    var random = getRandomInt(0,100)/100.0;
+            //    if (random <= mutationProb) {
+            //        if (bias == 0) {
+            //            bias = 1;
+            //        } else {
+            //            bias = 0;
+            //        }
+            //    }
+            //    ret.sigmoidLayers[i].b[j] = bias;
+            //}
+        }
+    }
+
+    return ret;
+}
+
+
 function crossoverAvg(brainA, brainB) {
     var ret = createBrain();
 
