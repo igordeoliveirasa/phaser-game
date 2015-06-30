@@ -13,7 +13,7 @@ function createBrain() {
         ],
         'n_ins' : 5,
         'n_outs' : 2,
-        'hidden_layer_sizes' : [3] // it coud be something like: [3,3,3] or [3,4,5] or anything
+        'hidden_layer_sizes' : [5] // it coud be something like: [3,3,3] or [3,4,5] or anything
     });
     return ret;
 }
