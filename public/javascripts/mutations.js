@@ -18,14 +18,14 @@ function mutate(brain) {
                 }
             }
 
-            //for (var j=0; j<brain.sigmoidLayers[i].b.length; j++) {
-            //    if (getRandomInt(0,1)==1) {
-            //        //brain.sigmoidLayers[i].b[j] = getRandomInt(-100000000000000000, 100000000000000000) / 100000000000000000;
-            //        ret.sigmoidLayers[i].b[j] = getRandomInt(0,1);
-            //    } else {
-            //        ret.sigmoidLayers[i].b[j] = brain.sigmoidLayers[i].b[j];
-            //    }
-            //}
+            for (var j=0; j<brain.sigmoidLayers[i].b.length; j++) {
+                if (getRandomInt(0,1)==1) {
+                    //brain.sigmoidLayers[i].b[j] = getRandomInt(-100000000000000000, 100000000000000000) / 100000000000000000;
+                    ret.sigmoidLayers[i].b[j] = getRandomInt(0,1);
+                } else {
+                    ret.sigmoidLayers[i].b[j] = brain.sigmoidLayers[i].b[j];
+                }
+            }
         } else {
             for (var j=0; j<brain.sigmoidLayers[i].W.length; j++) {
                 for (var k=0; k<brain.sigmoidLayers[i].W[j].length; k++) {
@@ -36,14 +36,14 @@ function mutate(brain) {
                     }
                 }
             }
-            //for (var j=0; j<brain.sigmoidLayers[i].b.length; j++) {
-            //    if (getRandomInt(0,1)==1) {
-            //        //ret.sigmoidLayers[i].b[j] = getRandomInt(-100000000000000000, 100000000000000000) / 100000000000000000;
-            //        ret.sigmoidLayers[i].b[j] = getRandomInt(0,1);
-            //    } else {
-            //        ret.sigmoidLayers[i].b[j] = brain.sigmoidLayers[i].b[j];
-            //    }
-            //}
+            for (var j=0; j<brain.sigmoidLayers[i].b.length; j++) {
+                if (getRandomInt(0,1)==1) {
+                    //ret.sigmoidLayers[i].b[j] = getRandomInt(-100000000000000000, 100000000000000000) / 100000000000000000;
+                    ret.sigmoidLayers[i].b[j] = getRandomInt(0,1);
+                } else {
+                    ret.sigmoidLayers[i].b[j] = brain.sigmoidLayers[i].b[j];
+                }
+            }
         }
     }
     return ret;

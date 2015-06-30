@@ -13,7 +13,7 @@ var Individual = function(game, id, x, y, w, angle, color, brain, score) {
         return player;
     };
 
-    this.update = function(left, right) {
+    this.update = function(up, angle) {
 
         if (this.energy <= 0) {
             left = 0;
@@ -21,39 +21,40 @@ var Individual = function(game, id, x, y, w, angle, color, brain, score) {
             this.speed = 0;
             return;
         }
-        var max_speed = 1.5;
-        var left_speed = max_speed * left;
-        var right_speed = max_speed * right;
-        this.speed = max_speed * ((left_speed + right_speed)/2.0);
 
+        var max_speed = 2.0;
+        var acceleration = 0.2;
+        var angleRotation = 5;
 
-
-        //this.angle += ((this.angle * left) + (this.angle * right)) / 2;
-
-
-        //var up = true;//left || right;
+        this.speed = max_speed * up;
+        this.angle = 360 * angle;
 
         //if (up) {
-        //    this.speed = 2;
+        //    this.speed += acceleration;
+        //} else {
+        //    this.speed -= acceleration;
         //}
-        //else {
+        //
+        //if (this.speed < 0) {
         //    this.speed = 0;
+        //} else if (this.speed > max_speed) {
+        //    this.speed = max_speed;
         //}
-
-        //this.speed = (left + right) * 1.5;//left * right;
-
-
-        //this.angle = ((this.angle * left_speed) / max_speed) + ((this.angle * right_speed) / max_speed) / 2;
-
-        this.angle += 90 * left;
-        this.angle -= 90 * right;
-
-        if (this.angle > 360) {
-            this.angle -= 360;
-        }
-        if (this.angle < -360) {
-            this.angle += 360;
-        }
+        //
+        //if (left) {
+        //    this.angle +=  angleRotation;
+        //}
+        //
+        //if (right) {
+        //    this.angle -= angleRotation;
+        //}
+        //
+        //if (this.angle > 360) {
+        //    this.angle -= 360;
+        //}
+        //if (this.angle < -360) {
+        //    this.angle += 360;
+        //}
 
         var radians = Math.PI/180 * this.angle;
         this.shape.x += this.speed * Math.cos(radians);
@@ -67,5 +68,5 @@ var Individual = function(game, id, x, y, w, angle, color, brain, score) {
     this.score = score;
     this.brain = brain;
     this.target = null;
-    this.energy = 1000;
+    this.energy = 100;
 }

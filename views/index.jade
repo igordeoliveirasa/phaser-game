@@ -303,7 +303,7 @@ block content
 
                     if (game.physics.arcade.overlap(individual.shape, foods, hasEaten, null, this)) {
                         individual.score += 1;
-                        individual.energy += 100;
+                        individual.energy += 50;
                     }
 
                     //                    if (individual.target==null || !individual.target.alive) {
@@ -334,6 +334,7 @@ block content
 
                         var prediction = individual.brain.predict([[individual.energy/1000.0, speed, angle, x, y]]);
                         individual.update(prediction[0][0], prediction[0][1]);
+
                         individual.energy -= 1;
                         if (individual.energy < 0) {
                             individual.energy = 0;
