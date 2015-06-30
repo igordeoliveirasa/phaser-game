@@ -36,11 +36,11 @@ block content
         game = new Phaser.Game(screenWidth, screenHeight, Phaser.AUTO, '', {preload: preload, create: create, update: update});
 
 
-        maxFood = 20;
+        maxFood = 50;
 
         var foods = null;
 
-        MAX_INDIVIDUALS = 20;
+        MAX_INDIVIDUALS = 30;
         brains = [];
         population = [];
         generation = 0;
@@ -179,7 +179,7 @@ block content
                     }
                 }
                 else {
-                    while (newPopulation.length < MAX_INDIVIDUALS) {
+                    while (newPopulation.length <= MAX_INDIVIDUALS) {
                         var individualA = population[getRandomInt(0, MAX_INDIVIDUALS - 1)];
                         var individualB = population[getRandomInt(0, MAX_INDIVIDUALS - 1)];
                         if (individualA.id != individualB.id) {
@@ -254,8 +254,10 @@ block content
                     var individual = population[i];
 
                     if (game.physics.arcade.overlap(individual.shape, foods, hasEaten, null, this)) {
-                        individual.score += 1;
-                        individual.energy += 50;
+                        if (individual.energy>0) {
+                            individual.score += 1;
+                            individual.energy += 50;
+                        }
                     }
 
                     //                    if (individual.target==null || !individual.target.alive) {
@@ -291,6 +293,16 @@ block content
                         if (individual.energy < 0) {
                             individual.energy = 0;
                         }
+                        //                        if (
+                        //                                individual.shape.x < -1 ||
+                        //                                individual.shape.x > screenWidth + 1 ||
+                        //                                individual.shape.y < -1 ||
+                        //                                individual.shape.y > screenHeight +1
+                        //                        ) {
+                        //                            individual.energy = 0;
+                        //                        }
+                        //game.world.remove(individual.shape);
+                        //individual.shape = createCircle(game, individual.shape.x, individual.shape.y, individual.width, null, null, Phaser.Color.RGBtoString(0,0,0,(individual.energy/100.0)*255,"#"));
                     }
                     // keyboard
                     //organism.update(cursors.up.isDown, cursors.left.isDown, cursors.right.isDown);

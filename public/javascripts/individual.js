@@ -62,6 +62,7 @@ var Individual = function(game, id, x, y, w, angle, color, brain, score) {
     };
 
     this.id = id;
+    this.width = w;
     this.shape = this.createShape(game, x, y, w, color)
     this.angle = angle;
     this.speed = 0.0;
